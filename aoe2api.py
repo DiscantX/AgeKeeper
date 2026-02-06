@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import zipfile
+import errno
 from string import Template
 from urllib.parse import urlparse, parse_qs
 
@@ -85,26 +86,34 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
         destination_path = f"{destination_folder}/{match_id}.zip"
         #Create directory if it doesn't exist
         os.makedirs(destination_folder, exist_ok=True)
-        # Save the file to the destination path
-        file_name = destination_path
-        with open(file_name, 'wb') as f:
-            f.write(response["content"])
-        print(f"File '{file_name}' saved successfully.")
-        if unzip:
-            with zipfile.ZipFile(file_name, 'r') as zip_ref:
-                zip_ref.extractall(destination_folder)
-                print(f"'{file_name}' unzipped successfully. ", end="")
-            if remove_zip:
-                if os.path.exists(destination_path):
-                    os.remove(destination_path)
-                    print(f"Removed zip file '{destination_path}' after extraction.")
-                else:
-                    print(f"Failed to remove zip file. The file '{destination_path}' does not exist")
-            else:
-                print()  # Add a newline after extraction message, so it doesn't flow into the next print.
+        try:
+            # raise OSError(errno.ENOSPC, os.strerror(errno.ENOSPC), destination_path)  #Used for testing. Can be remmoved in prod.
+
+            # Save the file to the destination path
+            file_name = destination_path
+            with open(file_name, 'wb') as f:
+                f.write(response["content"])
+            print(f" * File '{file_name}' saved successfully.")
+            if unzip:
+                with zipfile.ZipFile(file_name, 'r') as zip_ref:
+                    zip_ref.extractall(destination_folder)
+                    print(f"' - {file_name}' unzipped successfully. ", end="")
+                    if remove_zip:
+                        if os.path.exists(destination_path):
+                            os.remove(destination_path)
+                            print(f" * Removed zip file '{destination_path}' after extraction.")
+                        else:
+                            print(f" * Failed to remove zip file. The file '{destination_path}' does not exist")
+                    else:
+                        print()  # Add a newline after extraction message, so it doesn't flow into the next print.
+
+        except OSError as e:
+            response["status_code"] = e.errno
+            response["message"] = e.strerror
+            print(f" ! Caught an operating system error wile saving replay: Error {response['status_code']}: {response['message']}")
 
     else:
-        print(f"Failed to save file. Status code: {response['status_code']} {response['message']}")
+        print(f" ! Failed to save file. Status code: {response['status_code']} {response['message']}")
     
     return response["status_code"]
 
