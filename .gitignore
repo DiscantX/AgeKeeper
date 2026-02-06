@@ -1,2 +1,3 @@
 #Ignore all downloaded replays 
 replays/
+scrape_state.txt

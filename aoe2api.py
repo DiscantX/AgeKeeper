@@ -104,7 +104,7 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
                 print()  # Add a newline after extraction message, so it doesn't flow into the next print.
 
     else:
-        print(f"Failed to save file. Status code: {response['status_code']}")
+        print(f"Failed to save file. Status code: {response['status_code']} {response['message']}")
     
     return response["status_code"]
 
@@ -163,7 +163,7 @@ def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_
 
     #Default payload
     if not data:
-        data= f'{{"matchId":"{match_id}", "game":"{defaults["game"]}", "profileId":"{profile_id}"}}'
+        data= f'{{"matchId":"{match_id}", "profileId":"{profile_id}"}}'
     
     #Fetch the stats from the API
     print(f"Fetching stats from endpoint: '{endpoint_name}' with data: {data}")
@@ -192,7 +192,7 @@ def run_endpoint_tests():
     campaign_stats = fetch_endpoint("player_campaign_stats", profile_id)
     leaderboard = fetch_leaderboard()
 
-    print(f"Replay Download Response: {replay['status_code']} {replay['message']}\tContent Size: {len(replay['content'])} B\n")
+    print(f"Replay Download Response  : {replay['status_code']} {replay['message']}\tContent Size: {len(replay['content'])} B\n")
     print(f"Match Details Response: {match_details['status_code']} {match_details['message']} \nContents:\n {match_details['content']}\n")
     print(f"Full Stats Response: {full_stats['status_code']} {full_stats['message']} \nContents:\n {full_stats['content']}\n")
     print(f"Player Match List Response: {player_match_list['status_code']} {player_match_list['message']} \nContents:\n {player_match_list['content']}\n")
