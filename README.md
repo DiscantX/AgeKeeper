@@ -18,22 +18,22 @@ A Python wrapper for querying the Age of Empires II (AOE2) public stats API and 
 
 ## Quick start
 
-Run the script directly to hit the default endpoints and print responses:
+Scrape a short range in ascending order:
 
 ```bash
-python fetch_replay.py
+python replay_scraper.py --start_id 450000000 --end_id 450000050 --request-interval 5
 ```
 
-Scrape a range of replays using the scraper defaults:
+Scrape a range in descending order with exponential backoff:
 
 ```bash
-python replay_scraper.py
+python replay_scraper.py --start_id 453704499 --end_id 453700000 --count-backwards --back-off-delay 20 --back-off-multiplier 2 --max-back-off-delay 300
 ```
 
-Download a replay ZIP using the defaults (see `defaults` in the script):
+Resume a previous run (uses `scrape_state.txt`):
 
 ```bash
-python -c "from fetch_replay import fetch_endpoint, save_replay, defaults; resp = fetch_endpoint('replay', match_id=defaults['match_id']); save_replay(resp)"
+python replay_scraper.py --resume --start_id 450000000 --end_id 450010000 --request-interval 5
 ```
 
 ## Configuration
