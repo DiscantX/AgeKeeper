@@ -1,8 +1,8 @@
 import os
 import requests
-import base64
 
 default_desitnation_folder = 'replays'
+default_game = "age2"               #Could be potentially used for oter titles. Currently only tested with age2.
 
 '''
 Example headers and payload for fetching match details.
@@ -30,27 +30,11 @@ default_headers = {
 endpoints = {
     "match_details": "GetMatchDetail",
     "player_stats": "GetFullStats",
+    "player_match_list": "GetMatchList",
+    "player_campaign_stats": "GetCampaignStats"
 }
 
-def decode_b64_payload(encoded_payload):
-    '''
-    Helper function for when copying request payloads from Fiddler.
-    Used to decode payload to determine its structure.
-    Generally only needs to be used when investigating the api.
-    '''
-    decoded_bytes = base64.b64decode(encoded_payload)
-    decoded_str = decoded_bytes.decode('utf-8')
-    return decoded_str
-
-def encode_b64_payload(payload_str):
-    '''
-    UNUSED HELPER FUNCTION:
-    Encodes a payload string to base64.
-    Not actually needed for the api requests.
-    '''
-    encoded_bytes = base64.b64encode(payload_str.encode('utf-8'))
-    encoded_str = encoded_bytes.decode('utf-8')
-    return encoded_str
+# leaderboard https://api.ageofempires.com/api/v2/ageii/Leaderboard
 
 def get_replay_url(match_id, profile_id = 1):
     '''
@@ -84,14 +68,45 @@ def fetch_replay(match_id, profile_id = 1, destination_folder=default_desitnatio
     
     return response.status_code
 
-def fetch_stats(endpoint, match_id=1, profile_id=1, headers=default_headers):
+def fetch_player_match_list(profile_id, game=default_game, sortColumn="dateTime", sort_direction="DESC", match_type="3"):
+    '''
+    Fetches the match list for a given profile ID. Only the 10 most recent matches are returned.
+    Additional parameters can be set to modify the results.
+    '''
+
+    #Full payload example for fetching player match list, captured using Fiddler Everywhere:
+    #{"gamertag":"unknown user","playerNumber":0,"undefined":null,"game":"age2","profileId":199325,"sortColumn":"dateTime","sortDirection":"DESC","page":1,"recordCount":10,"matchType":"3"}
+
+    #Only profileId, game, sortColumn, sortDirection, and matchType appear to be required. The rest have no effect.
+    #   * (Setting "page" as anything other than 1 appears to return an empty list.)
+    #   * It is unclear if setting "game" to anything other than AOE2 will have any effect. (ie. AOE1)
+    #   * sortColumn can be dateTime, wins, or civilization
+    #   * sortDirection can be ASC or DESC
+    #TODO: Investigate matchType values further. 
+    # 1:  Deathmatch
+    # 2:  Team Deathmatch
+    # 3:  1v1 RandomMap
+    # 4:  Team RandomMap
+    # 13: Empire Wars
+    # 14: Team Empire Wars
+    # 25: Return of Rome
+    # 26: ??Team Return of Rome **Unconfirmed
+    # 29: RedBull Wololo: Londinium
+
+    payload = f'{{"game":"{game}","profileId":"{profile_id}","sortColumn":"{sortColumn}", "sortDirection":"{sort_direction}","matchType":"{match_type}"}}'
+    response = fetch_stats("player_match_list", profile_id=profile_id, payload=payload)    
+    return response
+
+def fetch_stats(endpoint, match_id=1, profile_id=1, headers=default_headers, payload=None):
     '''
     Fetches the match details for a given match ID and profile ID.
     Profile ID of one of the human players must be included.
     '''
-    # url = get_replay_detail_url(match_id)
-    # response = requests.post(url)
-    payload = f'{{"matchId":"{match_id}","game":"age2","profileId":"{profile_id}"}}'
+    #Default payload
+    if not payload:
+        payload = f'{{"matchId":"{match_id}","game":"age2","profileId":"{profile_id}"}}'
+    
+    #Fetch the stats from the API
     response = requests.request("POST", f"https://api.ageofempires.com/api/GameStats/AgeII/{endpoints[endpoint]}", headers=headers, data=payload)
     
     return response
@@ -101,11 +116,13 @@ def main():
     profile_id = 271202
     # status_code = fetch_replay(match_id, 1)
  
-    match_details = fetch_stats("match_details", match_id, profile_id)
-    full_stats = fetch_stats("player_stats", match_id, profile_id)
+    # match_details = fetch_stats("match_details", match_id, profile_id)
+    # full_stats = fetch_stats("player_stats", match_id, profile_id)
+    player_match_list = fetch_player_match_list(profile_id, match_type="3")
 
-    print(f"Match Details Response: {match_details.status_code} {match_details.content}\n\n")
-    print(f"Full Stats Response: {full_stats.status_code} {full_stats.content}\n\n")
+    # print(f"Match Details Response: {match_details.status_code} {match_details.content}\n")
+    # print(f"Full Stats Response: {full_stats.status_code} {full_stats.content}\n")
+    print(f"Player Match List Response: {player_match_list.status_code} {player_match_list.content}\n")
 
 if  __name__ == "__main__":
     main()
