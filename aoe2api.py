@@ -8,12 +8,12 @@ from string import Template
 from urllib.parse import urlparse, parse_qs
 
 
-defaults = {
-    '''
+'''
     Default configuration values.
     These can be modified as needed.
-    '''
+'''
 
+defaults = {
     "destination_folder": "replays",       #Folder where replay files will be saved. Can be changed to any valid path.
     "game": "age2",                        #The Age of {x} title to use. Could be potentially used for other titles. Currently only tested with age2.
     "profile_id": 199325,                  #Player's profile id. Default = Hera's profile ID, used for testing. Can be replaced with any profile ID.
@@ -45,12 +45,11 @@ defaults = {
     }
 }
 
+'''
+API endpoints for fetching replays and stats. The keys are used to identify the endpoint when calling fetch_endpoint().
+The endpoint URLs and methods were captured from requests made on the official Age of Empires website, and may be subject to change if the website is updated.
+'''
 endpoints = {
-    '''
-    API endpoints for fetching replays and stats. The keys are used to identify the endpoint when calling fetch_endpoint().
-    The endpoint URLs and methods were captured from requests made on the official Age of Empires website, and may be subject to change if the website is updated.
-    '''
-
     "replay":
                     {
                     "endpoint": "https://api.ageofempires.com/api/GameStats/AgeII/GetMatchReplay/?matchId=$matchId&profileId=$profileId",
@@ -84,7 +83,14 @@ endpoints = {
 
 ## <------------------------------------- Replay functions -------------------------------------> ##                       
 
-def save_replay(response, destination_folder=defaults["destination_folder"], unzip=defaults["unzip"], remove_zip=defaults["remove_zip"], quiet=False):
+def save_replay(
+    response,
+    destination_folder=defaults["destination_folder"],
+    unzip=defaults["unzip"],
+    remove_zip=defaults["remove_zip"],
+    quiet=False,
+    match_id=None,
+):
     '''
     Saves a replay file from a GET request response to the destination folder as {match_id}.zip.
     Use in conjunction with fetch_replay() to download and save a replay file. Alternatively, use download_replay() to do both in one step.
@@ -96,7 +102,15 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
     :param remove_zip: Whether to remove the original zip file after unzipping. Default is False. Removing the zip without unzipping first will result in loss of the replay file, so use with caution.
     '''
     #Retrieve the match ID from the request URL query parameters, required for file naming
-    match_id = parse_qs(urlparse(response["request"].url).query)["matchId"][0]
+    if match_id is None:
+        request = response.get("request")
+        if request is None:
+            response["status_code"] = 400
+            response["message"] = "Missing request info; pass match_id to save_replay()."
+            if not quiet:
+                print(f" ! Failed to save file. Status code: {response['status_code']} {response['message']}")
+            return response
+        match_id = parse_qs(urlparse(request.url).query)["matchId"][0]
     if response["status_code"] == 200:
         destination_path = f"{destination_folder}/{match_id}.zip"
         #Create directory if it doesn't exist
@@ -137,7 +151,7 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
         if not quiet:
             print(f" ! Failed to save file. Status code: {response['status_code']} {response['message']}")
     
-    return response
+    return {"status_code": response["status_code"], "request": response["request"], "message": response["message"], "content":response["content"]}
 
 def fetch_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"], quiet=False):
     '''
@@ -154,7 +168,14 @@ def download_replay(profile_id=defaults["profile_id"], match_id=defaults["match_
     Can optionaly unzip the replay file and remove the original zip after extraction.
     '''
     replay = fetch_replay(profile_id=profile_id, match_id=match_id, quiet=quiet)
-    response = save_replay(replay, destination_folder=destination_folder, unzip=unzip, remove_zip=remove_zip, quiet=quiet)
+    response = save_replay(
+        replay,
+        destination_folder=destination_folder,
+        unzip=unzip,
+        remove_zip=remove_zip,
+        quiet=quiet,
+        match_id=match_id,
+    )
     return response
 
 ## <------------------------------------- Stat retrieval endpoints -------------------------------------> ##                       
@@ -252,7 +273,6 @@ def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_
     #Fetch the stats from the API
     if not quiet:
         print(f"Fetching stats from endpoint: '{endpoint_name}' with data: {data}")
-    variables = {}
 
     if endpoints[endpoint_name]["method"] == "GET":
         values = json.loads(data)
@@ -267,7 +287,7 @@ def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_
 
 ## <------------------------------------------ Unit Tests ------------------------------------------> ##                       
 
-def run_endpoint_tests():
+def run_endpoint_tests(quiet=False, max_content_bytes=None):
     '''
     Runs all API endpoints using default values.
     '''
@@ -275,21 +295,59 @@ def run_endpoint_tests():
     profile_id = defaults["profile_id"]
     match_type = 3
 
-    fetched_replay = fetch_replay(match_id=match_id)
-    downloaded_replay = download_replay(match_id=match_id)
-    match_details = fetch_match_details(profile_id=profile_id, match_id=match_id)
-    player_stats = fetch_player_stats(profile_id=profile_id, match_type=match_type)
-    player_match_list = fetch_player_match_list(profile_id, match_type=match_type)
-    campaign_stats = fetch_player_campign_stats(profile_id)
-    leaderboard = fetch_leaderboard()
+    fetched_replay = fetch_replay(match_id=match_id, quiet=quiet)
+    downloaded_replay = download_replay(match_id=match_id, quiet=quiet)
+    match_details = fetch_match_details(profile_id=profile_id, match_id=match_id, quiet=quiet)
+    player_stats = fetch_player_stats(profile_id=profile_id, match_type=match_type, quiet=quiet)
+    player_match_list = fetch_player_match_list(profile_id, match_type=match_type, quiet=quiet)
+    campaign_stats = fetch_player_campign_stats(profile_id, quiet=quiet)
+    leaderboard = fetch_leaderboard(quiet=quiet)
 
-    print(f"Replay Fetch Response  : {fetched_replay['status_code']} {fetched_replay['message']}\tContent Size: {len(fetched_replay['content'])} B\n")
-    print(f"Downloaded Replay Response: {downloaded_replay['status_code']}  {downloaded_replay['message']} \tContent Size: {len(downloaded_replay['content'])} B\n")
-    print(f"Match Details Response: {match_details['status_code']} {match_details['message']} \nContents:\n {match_details['content']}\n")
-    print(f"Player Stats Response: {player_stats['status_code']} {player_stats['message']} \nContents:\n {player_stats['content']}\n")
-    print(f"Player Match List Response: {player_match_list['status_code']} {player_match_list['message']} \nContents:\n {player_match_list['content']}\n")
-    print(f"Campaign Stats Response: {campaign_stats['status_code']}  {campaign_stats['message']} \nContents:\n {campaign_stats['content']}\n")
-    print(f"Leaderboard Response: {leaderboard['status_code']}  {leaderboard['message']} \nContents:\n {leaderboard['content']}\n")
+    if quiet:
+        results = [
+            ("Replay Fetch", fetched_replay),
+            ("Downloaded Replay", downloaded_replay),
+            ("Match Details", match_details),
+            ("Player Stats", player_stats),
+            ("Player Match List", player_match_list),
+            ("Campaign Stats", campaign_stats),
+            ("Leaderboard", leaderboard),
+        ]
+        ok_count = sum(1 for _, resp in results if resp.get("status_code") == 200)
+        print(f"Run Tests Summary: {ok_count}/{len(results)} OK")
+        for name, resp in results:
+            status = resp.get("status_code")
+            message = resp.get("message", "")
+            print(f"- {name}: {status} {message}")
+        return
+
+    print("Replay Fetch Response:")
+    _print_response(fetched_replay, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
+
+    print("Downloaded Replay Response:")
+    _print_status(downloaded_replay, quiet=quiet)
+    print()
+
+    print("Match Details Response:")
+    _print_response(match_details, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
+
+    print("Player Stats Response:")
+    _print_response(player_stats, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
+
+    print("Player Match List Response:")
+    _print_response(player_match_list, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
+
+    print("Campaign Stats Response:")
+    _print_response(campaign_stats, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
+
+    print("Leaderboard Response:")
+    _print_response(leaderboard, max_content_bytes=max_content_bytes, quiet=quiet)
+    print()
 
 ## <------------------------------------------ Helper functions ------------------------------------------> ##                       
 
@@ -336,33 +394,40 @@ def _add_common_args(parser):
     parser.add_argument("-g", "--game", type=str, default=defaults["game"], help="Game key (e.g., age2)")
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description="AOE2 API CLI for fetching endpoints and downloading replays.")
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_parser.add_argument("--quiet", action="store_true", help="Suppress CLI output")
+    common_parser.add_argument("--max-content-bytes", type=int, default=None, help="Max bytes to print for response content")
+
+    parser = argparse.ArgumentParser(
+        description="AOE2 API CLI for fetching endpoints and downloading replays.",
+        parents=[common_parser],
+    )
     subparsers = parser.add_subparsers(dest="command")
 
-    replay_parser = subparsers.add_parser("replay", help="Download a match replay")
+    replay_parser = subparsers.add_parser("replay", help="Download a match replay", parents=[common_parser])
     _add_common_args(replay_parser)
     replay_parser.add_argument("-o", "--output", type=str, default=defaults["destination_folder"], help="Destination folder for replay ZIPs")
     replay_parser.add_argument("-u", "--unzip", action="store_true", help="Unzip downloaded replay")
     replay_parser.add_argument("-rm", "--remove-zip", action="store_true", help="Remove ZIP after unzipping")
 
-    match_details_parser = subparsers.add_parser("match-details", help="Fetch match details")
+    match_details_parser = subparsers.add_parser("match-details", help="Fetch match details", parents=[common_parser])
     _add_common_args(match_details_parser)
 
-    player_stats_parser = subparsers.add_parser("player-stats", help="Fetch full player stats for a match")
+    player_stats_parser = subparsers.add_parser("player-stats", help="Fetch full player stats for a match", parents=[common_parser])
     player_stats_parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
     player_stats_parser.add_argument("-mt", "--match-type", type=int, default=defaults["match_type"], help="Match type")
 
-    match_list_parser = subparsers.add_parser("player-match-list", help="Fetch player match list")
+    match_list_parser = subparsers.add_parser("player-match-list", help="Fetch player match list", parents=[common_parser])
     match_list_parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
     match_list_parser.add_argument("-g", "--game", type=str, default=defaults["game"], help="Game key (e.g., age2)")
     match_list_parser.add_argument("-sc", "--sort-column", type=str, default="dateTime", help="Sort column")
     match_list_parser.add_argument("-sd", "--sort-direction", type=str, default="DESC", help="Sort direction (ASC/DESC)")
     match_list_parser.add_argument("-mt", "--match-type", type=int, default=defaults["match_type"], help="Match type")
 
-    campaign_parser = subparsers.add_parser("player-campaign-stats", help="Fetch player campaign stats")
+    campaign_parser = subparsers.add_parser("player-campaign-stats", help="Fetch player campaign stats", parents=[common_parser])
     campaign_parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
 
-    leaderboard_parser = subparsers.add_parser("leaderboard", help="Fetch leaderboard")
+    leaderboard_parser = subparsers.add_parser("leaderboard", help="Fetch leaderboard", parents=[common_parser])
     leaderboard_parser.add_argument("-r", "--region", type=str, default="7", help="Region")
     leaderboard_parser.add_argument("-mt", "--match-type", type=int, default=defaults["match_type"], help="Match type")
     leaderboard_parser.add_argument("-cmt", "--console-match-type", type=int, default=15, help="Console match type")
@@ -372,20 +437,18 @@ def _parse_args():
     leaderboard_parser.add_argument("-sc", "--sort-column", type=str, default="rank", help="Sort column")
     leaderboard_parser.add_argument("-sd", "--sort-direction", type=str, default="ASC", help="Sort direction (ASC/DESC)")
 
-    endpoint_parser = subparsers.add_parser("endpoint", help="Fetch a raw endpoint by name")
+    endpoint_parser = subparsers.add_parser("endpoint", help="Fetch a raw endpoint by name", parents=[common_parser])
     endpoint_parser.add_argument("-e", "--endpoint-name", type=str, required=True, help="Endpoint name")
     endpoint_parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
     endpoint_parser.add_argument("-m", "--match-id", type=int, default=defaults["match_id"], help="Match ID")
     endpoint_parser.add_argument("-d", "--data", type=str, default=None, help="Raw JSON string payload")
 
     parser.add_argument("--run-tests", action="store_true", help="Run built-in endpoint tests")
-    parser.add_argument("--quiet", action="store_true", help="Suppress CLI output")
-    parser.add_argument("--max-content-bytes", type=int, default=None, help="Max bytes to print for response content")
 
     args = parser.parse_args()
 
     if args.run_tests:
-        run_endpoint_tests()
+        run_endpoint_tests(quiet=args.quiet, max_content_bytes=args.max_content_bytes)
         return
 
     if args.command == "replay":
