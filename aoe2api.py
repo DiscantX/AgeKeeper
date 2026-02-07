@@ -13,14 +13,7 @@ from urllib.parse import urlparse, parse_qs
     These can be modified as needed.
 '''
 
-=======
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
 defaults = {
-    '''
-    Default configuration values.
-    These can be modified as needed.
-    '''
-
     "destination_folder": "replays",       #Folder where replay files will be saved. Can be changed to any valid path.
     "game": "age2",                        #The Age of {x} title to use. Could be potentially used for other titles. Currently only tested with age2.
     "profile_id": 199325,                  #Player's profile id. Default = Hera's profile ID, used for testing. Can be replaced with any profile ID.
@@ -57,11 +50,6 @@ API endpoints for fetching replays and stats. The keys are used to identify the 
 The endpoint URLs and methods were captured from requests made on the official Age of Empires website, and may be subject to change if the website is updated.
 '''
 endpoints = {
-    '''
-    API endpoints for fetching replays and stats. The keys are used to identify the endpoint when calling fetch_endpoint().
-    The endpoint URLs and methods were captured from requests made on the official Age of Empires website, and may be subject to change if the website is updated.
-    '''
-
     "replay":
                     {
                     "endpoint": "https://api.ageofempires.com/api/GameStats/AgeII/GetMatchReplay/?matchId=$matchId&profileId=$profileId",
@@ -95,7 +83,6 @@ endpoints = {
 
 ## <------------------------------------- Replay functions -------------------------------------> ##                       
 
-<<<<<<< HEAD
 def save_replay(
     response,
     destination_folder=defaults["destination_folder"],
@@ -104,9 +91,6 @@ def save_replay(
     quiet=False,
     match_id=None,
 ):
-=======
-def save_replay(response, destination_folder=defaults["destination_folder"], unzip=defaults["unzip"], remove_zip=defaults["remove_zip"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Saves a replay file from a GET request response to the destination folder as {match_id}.zip.
     Use in conjunction with fetch_replay() to download and save a replay file. Alternatively, use download_replay() to do both in one step.
@@ -143,7 +127,6 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
             if unzip:
                 with zipfile.ZipFile(file_name, 'r') as zip_ref:
                     zip_ref.extractall(destination_folder)
-<<<<<<< HEAD
                     if not quiet:
                         print(f"' - {file_name}' unzipped successfully. ", end="")
                 if remove_zip:
@@ -157,17 +140,6 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
                 else:
                     if not quiet:
                         print()  # Add a newline after extraction message, so it doesn't flow into the next print.
-=======
-                    print(f"' - {file_name}' unzipped successfully. ", end="")
-                if remove_zip:
-                    if os.path.exists(destination_path):
-                        os.remove(destination_path)
-                        print(f" * Removed zip file '{destination_path}' after extraction.")
-                    else:
-                        print(f" * Failed to remove zip file. The file '{destination_path}' does not exist")
-                else:
-                    print()  # Add a newline after extraction message, so it doesn't flow into the next print.
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
 
         except OSError as e:
             response["status_code"] = e.errno
@@ -179,36 +151,22 @@ def save_replay(response, destination_folder=defaults["destination_folder"], unz
         if not quiet:
             print(f" ! Failed to save file. Status code: {response['status_code']} {response['message']}")
     
-<<<<<<< HEAD
     return {"status_code": response["status_code"], "request": response["request"], "message": response["message"], "content":response["content"]}
 
 def fetch_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"], quiet=False):
-=======
-    return response
-
-def fetch_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Fetches replay file from the api. Does not save it to disk. To do so,
     pass the return value of this function to save_replay().
     Alternatively, use download_replay() to do both.
     '''
-<<<<<<< HEAD
     response = fetch_endpoint("replay", profile_id=profile_id, match_id=match_id, quiet=quiet)
     return response
 
 def download_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"], destination_folder=defaults["destination_folder"], unzip=defaults["unzip"], remove_zip=defaults["remove_zip"], quiet=False):
-=======
-    response = fetch_endpoint("replay", profile_id=profile_id, match_id=match_id)
-    return response
-
-def download_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"], destination_folder=defaults["destination_folder"], unzip=defaults["unzip"], remove_zip=defaults["remove_zip"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Fetches a replay file from the API and saves it to disk. Equivalent to using both fetch_replay() and save_replay() in conjunction.
     Can optionaly unzip the replay file and remove the original zip after extraction.
     '''
-<<<<<<< HEAD
     replay = fetch_replay(profile_id=profile_id, match_id=match_id, quiet=quiet)
     response = save_replay(
         replay,
@@ -222,14 +180,6 @@ def download_replay(profile_id=defaults["profile_id"], match_id=defaults["match_
 
 ## <------------------------------------- Stat retrieval endpoints -------------------------------------> ##                       
 def fetch_match_details(profile_id=defaults["profile_id"], match_id=defaults["match_id"], quiet=False):
-=======
-    replay = fetch_replay(profile_id=profile_id, match_id=match_id)
-    response = save_replay(replay, destination_folder=destination_folder, unzip=unzip, remove_zip=remove_zip)
-    return response
-
-## <------------------------------------- Stat retrieval endpoints -------------------------------------> ##                       
-def fetch_match_details(profile_id=defaults["profile_id"], match_id=defaults["match_id"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Retrieves stats for a given match. Both profile_id and match_id are required. profile_id may be any of the players in the match.
     
@@ -237,17 +187,10 @@ def fetch_match_details(profile_id=defaults["profile_id"], match_id=defaults["ma
     :param match_id: Match ID of the match to retrieve stats for.
     '''
     payload = f'{{profileId: {profile_id}, "matchId":"{match_id}"}}'
-<<<<<<< HEAD
     response = fetch_endpoint("match_details", data=payload, quiet=quiet)
     return response
 
 def fetch_player_stats(profile_id=defaults["profile_id"], match_type=defaults["match_type"], quiet=False):
-=======
-    response = fetch_endpoint("match_details", data=payload)
-    return response
-
-def fetch_player_stats(profile_id=defaults["profile_id"], match_type=defaults["match_type"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Retrieves full stats for a given player profile ID. Requires the match type to be specified, as the API endpoint returns different stats based on the match type provided.
     
@@ -255,34 +198,20 @@ def fetch_player_stats(profile_id=defaults["profile_id"], match_type=defaults["m
     :param match_type: Match type to retrieve stats for. Use get_match_type_string() for known match types.
     '''
     payload = f'{{profileId: {profile_id}, "matchType":"{match_type}"}}'
-<<<<<<< HEAD
     response = fetch_endpoint("player_stats", data=payload, quiet=quiet)
     return response
 
 def fetch_player_campign_stats(profile_id=defaults["profile_id"], quiet=False):
-=======
-    response = fetch_endpoint("player_stats", data=payload)
-    return response
-
-def fetch_player_campign_stats(profile_id=defaults["profile_id"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Retrieves campaign stats for a given player profile ID.
     
     :param profile_id: Profile ID of the player to retrieve campaign stats for.
     '''
     payload = f'{{profileId: {profile_id}}}'
-<<<<<<< HEAD
     response = fetch_endpoint("player_campaign_stats", data=payload, quiet=quiet)
     return response
 
 def fetch_player_match_list(profile_id=defaults["profile_id"], game=defaults["game"], sortColumn="dateTime", sort_direction="DESC", match_type=defaults["match_type"], quiet=False):
-=======
-    response = fetch_endpoint("player_campaign_stats", data=payload)
-    return response
-
-def fetch_player_match_list(profile_id=defaults["profile_id"], game=defaults["game"], sortColumn="dateTime", sort_direction="DESC", match_type=defaults["match_type"]):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Fetches the match list for a given profile ID. Only the 10 most recent matches are returned.
     Additional parameters can be set to modify the results.
@@ -319,11 +248,7 @@ def fetch_leaderboard(region="7", match_type="3", console_match_type=15, search_
 
 ## <------------------------------------- General purpose endpoint handler -------------------------------------> ##                       
 
-<<<<<<< HEAD
 def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_id=defaults["match_id"], headers=defaults["headers"], data=None, quiet=False):
-=======
-def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_id=defaults["match_id"], headers=defaults["headers"], data=None):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Fetches various stats from the Age of Empires API. Endpoint name must be specified.
     This is the general purpose endpoint handler, which can be used to fetch any endpoint defined in the endpoints dictionary.
@@ -362,11 +287,7 @@ def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_
 
 ## <------------------------------------------ Unit Tests ------------------------------------------> ##                       
 
-<<<<<<< HEAD
 def run_endpoint_tests(quiet=False, max_content_bytes=None):
-=======
-def run_endpoint_tests():
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     '''
     Runs all API endpoints using default values.
     '''
@@ -374,7 +295,6 @@ def run_endpoint_tests():
     profile_id = defaults["profile_id"]
     match_type = 3
 
-<<<<<<< HEAD
     fetched_replay = fetch_replay(match_id=match_id, quiet=quiet)
     downloaded_replay = download_replay(match_id=match_id, quiet=quiet)
     match_details = fetch_match_details(profile_id=profile_id, match_id=match_id, quiet=quiet)
@@ -429,24 +349,6 @@ def run_endpoint_tests():
     _print_response(leaderboard, max_content_bytes=max_content_bytes, quiet=quiet)
     print()
 
-=======
-    fetched_replay = fetch_replay(match_id=match_id)
-    downloaded_replay = download_replay(match_id=match_id)
-    match_details = fetch_match_details(profile_id=profile_id, match_id=match_id)
-    player_stats = fetch_player_stats(profile_id=profile_id, match_type=match_type)
-    player_match_list = fetch_player_match_list(profile_id, match_type=match_type)
-    campaign_stats = fetch_player_campign_stats(profile_id)
-    leaderboard = fetch_leaderboard()
-
-    print(f"Replay Fetch Response  : {fetched_replay['status_code']} {fetched_replay['message']}\tContent Size: {len(fetched_replay['content'])} B\n")
-    print(f"Downloaded Replay Response: {downloaded_replay['status_code']}  {downloaded_replay['message']} \tContent Size: {len(downloaded_replay['content'])} B\n")
-    print(f"Match Details Response: {match_details['status_code']} {match_details['message']} \nContents:\n {match_details['content']}\n")
-    print(f"Player Stats Response: {player_stats['status_code']} {player_stats['message']} \nContents:\n {player_stats['content']}\n")
-    print(f"Player Match List Response: {player_match_list['status_code']} {player_match_list['message']} \nContents:\n {player_match_list['content']}\n")
-    print(f"Campaign Stats Response: {campaign_stats['status_code']}  {campaign_stats['message']} \nContents:\n {campaign_stats['content']}\n")
-    print(f"Leaderboard Response: {leaderboard['status_code']}  {leaderboard['message']} \nContents:\n {leaderboard['content']}\n")
-
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
 ## <------------------------------------------ Helper functions ------------------------------------------> ##                       
 
 def get_match_type_string(match_type):
@@ -463,13 +365,9 @@ def get_match_type_string(match_type):
     }
     return match_type_mapping.get(match_type, f"Unknown Match Type ({match_type})")
 
-<<<<<<< HEAD
 def _print_response(response, max_content_bytes=None, quiet=False):
     if quiet:
         return
-=======
-def _print_response(response):
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     print(f"Status: {response['status_code']} {response['message']}")
     content = response.get("content")
     if content is None:
@@ -498,7 +396,6 @@ def _add_common_args(parser):
     parser.add_argument("-g", "--game", type=str, default=defaults["game"], help="Game key (e.g., age2)")
 
 def _parse_args():
-<<<<<<< HEAD
     common_parser = argparse.ArgumentParser(add_help=False)
     common_parser.add_argument("--quiet", action="store_true", help="Suppress CLI output")
     common_parser.add_argument("--max-content-bytes", type=int, default=None, help="Max bytes to print for response content")
@@ -507,9 +404,6 @@ def _parse_args():
         description="AOE2 API CLI for fetching endpoints and downloading replays.",
         parents=[common_parser],
     )
-=======
-    parser = argparse.ArgumentParser(description="AOE2 API CLI for fetching endpoints and downloading replays.")
->>>>>>> c28365fb3ec962b094e2713206a2c2239d7179ee
     subparsers = parser.add_subparsers(dest="command")
 
     replay_parser = subparsers.add_parser("replay", help="Download a match replay", parents=[common_parser])
