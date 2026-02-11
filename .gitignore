@@ -3,3 +3,6 @@ replays/
 scrape_state*.txt
 __pycache__/
 AgeKeeper.code-workspace
+prototypes/
+data_ref/
+.env

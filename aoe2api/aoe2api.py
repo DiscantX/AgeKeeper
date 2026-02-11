@@ -101,7 +101,6 @@ def save_replay(
     :param unzip: Whether to unzip the replay file after downloading. Default is False. Unzipped files will be saved in the same destination folder.
     :param remove_zip: Whether to remove the original zip file after unzipping. Default is False. Removing the zip without unzipping first will result in loss of the replay file, so use with caution.
     '''
-    #Retrieve the match ID from the request URL query parameters, required for file naming
     if match_id is None:
         request = response.get("request")
         if request is None:
@@ -110,6 +109,7 @@ def save_replay(
             if not quiet:
                 print(f" ! Failed to save file. Status code: {response['status_code']} {response['message']}")
             return response
+        #Retrieve the match ID from the request URL query parameters, required for file naming
         match_id = parse_qs(urlparse(request.url).query)["matchId"][0]
     if response["status_code"] == 200:
         destination_path = f"{destination_folder}/{match_id}.zip"
@@ -155,7 +155,7 @@ def save_replay(
 
 def fetch_replay(profile_id=defaults["profile_id"], match_id=defaults["match_id"], quiet=False):
     '''
-    Fetches replay file from the api. Does not save it to disk. To do so,
+    Fetches replay file from the API. Does not save it to disk. To do so,
     pass the return value of this function to save_replay().
     Alternatively, use download_replay() to do both.
     '''

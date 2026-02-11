@@ -1,4 +1,4 @@
-import aoe2api
+from aoe2api import aoe2api
 import time
 import argparse
 
