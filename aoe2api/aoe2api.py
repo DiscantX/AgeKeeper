@@ -259,7 +259,9 @@ def fetch_leaderboard(region="7", match_type="3", console_match_type=15, search_
 
 def fetch_player(player_name):
     response = search_for_player(player_name)
-    first_result = response.get("content").get("items")[0]
+    first_result = None
+    if response.get("content", None):
+        first_result = response.get("content", {}).get("items", {})[0]
     return first_result
     
 def search_for_player(player_name):
@@ -383,12 +385,11 @@ def get_usernames_from_ids(ids:list[str]):
     return usernames
 
 def get_ids_from_usernames(player_names:list[str]):
-    ids = [
-        fetch_player(
-            player_name=player_name
-            ).get("rlUserId", {})
-        for player_name in player_names
-    ]
+    ids = []
+    for player_name in player_names:
+        player = fetch_player(player_name=player_name)
+        if player:
+            ids.append(player.get("rlUserId", {}))
     return ids
 
 def get_match_type_string(match_type):

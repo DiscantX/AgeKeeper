@@ -32,7 +32,7 @@ class MatchBook:
         self._matches.clear()
 
     def print_number_of_matches(self):
-        print(f"Current number of {self.subscription_type.capitalize()} matches: {len(self)}")
+        print(f"Current number of {self.subscription_type} matches: {len(self)}")
     
     def add_matches(self, event):
         response_type = lobby.get_response_type(event)
