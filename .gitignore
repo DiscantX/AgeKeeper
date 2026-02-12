@@ -1,6 +1,7 @@
 #Ignore all downloaded replays 
 replays/
 scrape_state*.txt
+watchlist.json
 __pycache__/
 AgeKeeper.code-workspace
 prototypes/

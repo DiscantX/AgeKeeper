@@ -3,7 +3,7 @@
     
 "Comment": {
     "Contents":        "This file contains the dataset for civilizations, maps, technologies, terrain, and objects in Age of Empires II: Definitive Edition.",
-    "Attribution":     "The data file is sourced from the AoE2 Reference Data repository on GitHub.",
+    "Attribution":     "The data file is sourced from the SiegeEngineers AoE2 Reference Data repository on GitHub.",
     "Attribution_URL": "https://github.com/SiegeEngineers/aoc-reference-data/blob/master/data/datasets/100.json"
 },
 

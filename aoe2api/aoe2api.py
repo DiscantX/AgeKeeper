@@ -79,7 +79,13 @@ endpoints = {
                     "endpoint": "https://api.ageofempires.com/api/v2/ageii/Leaderboard",
                     "method": "POST"
                     },
+    "global_stats":
+                    {
+                    "endpoint": "https://api.ageofempires.com/api/v2/ageii/GetGlobalStats",
+                    "method": "POST"
+                    }
 }
+
 
 ## <------------------------------------- Replay functions -------------------------------------> ##                       
 
@@ -211,6 +217,11 @@ def fetch_player_campign_stats(profile_id=defaults["profile_id"], quiet=False):
     response = fetch_endpoint("player_campaign_stats", data=payload, quiet=quiet)
     return response
 
+def fetch_global_stats(quiet=False):
+    payload = "{'civid': '4'}"
+    response = fetch_endpoint("global_stats", data=payload, quiet=quiet)
+    return response
+
 def fetch_player_match_list(profile_id=defaults["profile_id"], game=defaults["game"], sortColumn="dateTime", sort_direction="DESC", match_type=defaults["match_type"], quiet=False):
     '''
     Fetches the match list for a given profile ID. Only the 10 most recent matches are returned.
@@ -244,6 +255,15 @@ def fetch_leaderboard(region="7", match_type="3", console_match_type=15, search_
     '''
     payload = f'{{"region":"{region}","matchType":"{match_type}","consoleMatchType":{console_match_type},"searchPlayer":"{search_player}","page":{page},"count":{count},"sortColumn":"{sort_column}","sortDirection":"{sort_direction}"}}'
     response = fetch_endpoint("leaderboard", data=payload, quiet=quiet)
+    return response
+
+def fetch_player(player_name):
+    response = search_for_player(player_name)
+    first_result = response.get("content").get("items")[0]
+    return first_result
+    
+def search_for_player(player_name):
+    response = fetch_leaderboard(search_player=player_name)
     return response
 
 ## <------------------------------------- General purpose endpoint handler -------------------------------------> ##                       
@@ -282,8 +302,11 @@ def fetch_endpoint(endpoint_name=None, profile_id=defaults["profile_id"], match_
         response = requests.request("POST", f"{endpoints[endpoint_name]['endpoint']}", headers=headers, data=data)
     else:
         return {"status_code": 400, "request": response.request, "message": f"Invalid method for endpoint {endpoint_name}", "content": None}
-    
-    return {"status_code": response.status_code, "request": response.request, "message": response.reason, "content": response.content}
+    if response.content:
+        content = json.loads(response.content)
+    else:
+        content = None
+    return {"status_code": response.status_code, "request": response.request, "message": response.reason, "content": content}
 
 ## <------------------------------------------ Unit Tests ------------------------------------------> ##                       
 
@@ -350,6 +373,23 @@ def run_endpoint_tests(quiet=False, max_content_bytes=None):
     print()
 
 ## <------------------------------------------ Helper functions ------------------------------------------> ##                       
+def get_usernames_from_ids(ids:list[str]):
+    usernames = [
+                fetch_player_stats(
+                    profile_id=str(id)
+                    ).get("content", {}).get("user", {}).get("userName", {})
+                 for id in ids
+                 ]
+    return usernames
+
+def get_ids_from_usernames(player_names:list[str]):
+    ids = [
+        fetch_player(
+            player_name=player_name
+            ).get("rlUserId", {})
+        for player_name in player_names
+    ]
+    return ids
 
 def get_match_type_string(match_type):
     match_type_mapping = {
@@ -387,9 +427,6 @@ def _print_status(response, quiet=False):
     print(f"Status: {response['status_code']} {response['message']}")
 
 ## <------------------------------------- Arg parsing for CLI use -------------------------------------> ##                       
-
-## <------------------------------------- Arg parsing for CLI use -------------------------------------> ##                       
-
 def _add_common_args(parser):
     parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
     parser.add_argument("-m", "--match-id", type=int, default=defaults["match_id"], help="Match ID")
@@ -415,7 +452,7 @@ def _parse_args():
     match_details_parser = subparsers.add_parser("match-details", help="Fetch match details", parents=[common_parser])
     _add_common_args(match_details_parser)
 
-    player_stats_parser = subparsers.add_parser("player-stats", help="Fetch full player stats for a match", parents=[common_parser])
+    player_stats_parser = subparsers.add_parser("player-stats", help="Fetch full player stats given a profile id", parents=[common_parser])
     player_stats_parser.add_argument("-p", "--profile-id", type=int, default=defaults["profile_id"], help="Profile ID")
     player_stats_parser.add_argument("-mt", "--match-type", type=int, default=defaults["match_type"], help="Match type")
 
@@ -515,7 +552,8 @@ def _parse_args():
     parser.print_help()
 
 def main():
-    _parse_args()
+    # _parse_args()
+    print(fetch_global_stats())
 
 if  __name__ == "__main__":
     main()

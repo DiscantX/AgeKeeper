@@ -23,7 +23,6 @@ class Subscription:
         if self.ids:
             payload["ids"] = [str(item) for item in self.ids]
         json_string = json.dumps(payload, separators=(",", ":"))
-        print(json_string)
         return json_string
 
 ## ---------------------------- Helper functions ---------------------------- ##
@@ -93,11 +92,9 @@ def get_short_response_type(event):
     return short_response_type   
 
 def get_civ_name(civ_id: int) -> str:
-    matching_dict = next(
-        (value for key, value in data.get("civilizations", {}).items() if value.get("id") == civ_id), 
-        None
-    )
-    return matching_dict.get("name", "Unknown") if matching_dict else "Random"
+    civilizations = data.get("civilizations", {})
+    civ = civilizations.get(str(civ_id))
+    return civ.get("name", "Unknown") if civ else "Random"
 
 def print_short_match_info(event, match_ids: list[str]) -> None:
     response_type = get_response_type(event)
@@ -247,6 +244,22 @@ def subscribe(subscription_names: list[str], player_ids: list[str] = None, eloty
 async def receive_lobby_events(subscriptions: Iterable[Subscription], callback: Callable, **kwargs) -> None:
     async for event in _lobby_event_stream(subscriptions=subscriptions, **kwargs):
         callback(event, **kwargs)
+
+async def connect_to_subscriptions_async(subscriptions: list, callback: Callable, **kwargs) -> None:
+    await receive_lobby_events(
+        subscriptions=subscriptions,
+        callback=callback,
+        **kwargs
+    )
+
+def connect_to_subscriptions_task(subscriptions: list, callback: Callable, **kwargs):
+    return asyncio.create_task(
+        connect_to_subscriptions_async(
+            subscriptions=subscriptions,
+            callback=callback,
+            **kwargs
+        )
+    )
 
 def connect_to_subscriptions(subscriptions: list, callback: Callable, **kwargs):
     print(f"Connecting to subscriptions {subscriptions}...")
