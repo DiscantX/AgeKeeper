@@ -8,3 +8,4 @@ prototypes/
 data_ref/
 spies/avatars/
 .env
+spies/logs/spies.log
